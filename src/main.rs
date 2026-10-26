@@ -2,12 +2,15 @@ use macroquad::prelude::*;
 
 mod combat;
 mod enemy;
+mod enemy_spawner;
 mod event;
 mod item;
 mod player;
 mod projectile;
 
 use enemy::Enemy;
+use enemy::EnemyType;
+use enemy_spawner::{EnemySpawnConfig, spawn_room_enemies};
 use event::{EventQueue, GameEvent};
 use item::{ITEM_DEFINITIONS, Item};
 use player::Player;
@@ -17,11 +20,18 @@ use projectile::Projectile;
 async fn main() {
     let mut player = Player::new(screen_width() / 2.0, screen_height() / 2.0);
 
-    let mut enemies = vec![
-        Enemy::new(100.0, 100.0),
-        Enemy::runner(300.0, 150.0),
-        Enemy::new(500.0, 300.0),
-    ];
+    // The starting room can spawn either of these enemy types.
+    // Later, each stage can define its own pool.
+    let starting_enemy_types = [EnemyType::Chaser, EnemyType::Runner];
+
+    let spawn_config = EnemySpawnConfig::new(
+        &starting_enemy_types,
+        0.08,  // 8% chance per special trait
+        150.0, // Try to keep enemies away from the player's starting position
+    );
+    let seed = macroquad::miniquad::date::now().to_bits();
+    macroquad::rand::srand(seed);
+    let mut enemies = spawn_room_enemies(3, screen_width(), screen_height(), &spawn_config);
 
     let mut items = vec![
         Item::new(100.0, screen_height() - 100.0, &ITEM_DEFINITIONS[0]),
@@ -109,10 +119,7 @@ async fn main() {
                 enemy.update(player.center());
             }
 
-            combat::resolve_projectile_hits(&mut projectiles, &mut enemies);
-            enemies.retain(|enemy| enemy.health > 0.0);
-
-            projectiles.retain(|projectile| projectile.radius > 0.0 && !projectile.is_offscreen());
+            combat::resolve_projectile_hits(&mut projectiles, &mut enemies, &mut event_queue);
 
             // Collect each item once.
             for item in &mut items {

@@ -1,9 +1,14 @@
 use crate::enemy::Enemy;
+use crate::event::{EventQueue, GameEvent};
 use crate::projectile::Projectile;
 
-/// Resolves projectile hits, removes defeated enemies,
-/// and removes projectiles that have hit something or left the screen.
-pub fn resolve_projectile_hits(projectiles: &mut Vec<Projectile>, enemies: &mut Vec<Enemy>) {
+/// Resolves projectile hits, publishes enemy death events,
+/// and removes defeated enemies and used projectiles.
+pub fn resolve_projectile_hits(
+    projectiles: &mut Vec<Projectile>,
+    enemies: &mut Vec<Enemy>,
+    event_queue: &mut EventQueue,
+) {
     // Each projectile can damage at most one enemy.
     for projectile in projectiles.iter_mut() {
         if projectile.radius <= 0.0 {
@@ -21,9 +26,14 @@ pub fn resolve_projectile_hits(projectiles: &mut Vec<Projectile>, enemies: &mut 
         }
     }
 
-    // Remove defeated enemies.
-    enemies.retain(|enemy| enemy.health > 0.0);
+    // Publish one event for each enemy defeated this frame.
+    let defeated_count = enemies.iter().filter(|enemy| enemy.health <= 0.0).count();
 
-    // Remove used projectiles and projectiles outside the room.
+    for _ in 0..defeated_count {
+        event_queue.publish(GameEvent::EnemyDied);
+    }
+
+    // Remove defeated enemies and used or offscreen projectiles.
+    enemies.retain(|enemy| enemy.health > 0.0);
     projectiles.retain(|projectile| projectile.radius > 0.0 && !projectile.is_offscreen());
 }
