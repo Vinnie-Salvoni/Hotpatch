@@ -1,4 +1,4 @@
-
+use crate::projectile::Projectile;
 use macroquad::prelude::*;
 
 pub struct Player {
@@ -72,14 +72,14 @@ impl Player {
 
         self.pos += self.vel * dt;
 
-        self.pos.x = self.pos.x.clamp(
-            0.0,
-            (screen_width() - self.size.x).max(0.0),
-        );
-        self.pos.y = self.pos.y.clamp(
-            0.0,
-            (screen_height() - self.size.y).max(0.0),
-        );
+        self.pos.x = self
+            .pos
+            .x
+            .clamp(0.0, (screen_width() - self.size.x).max(0.0));
+        self.pos.y = self
+            .pos
+            .y
+            .clamp(0.0, (screen_height() - self.size.y).max(0.0));
     }
 
     pub fn center(&self) -> Vec2 {
@@ -87,15 +87,36 @@ impl Player {
     }
 
     pub fn draw(&self) {
-        draw_rectangle(
-            self.pos.x,
-            self.pos.y,
-            self.size.x,
-            self.size.y,
-            WHITE,
-        );
+        draw_rectangle(self.pos.x, self.pos.y, self.size.x, self.size.y, WHITE);
 
         // Small visual marker showing which way the player faces is
         // deliberately omitted for now; shooting is directional.
+    }
+    pub fn shoot(&self, projectiles: &mut Vec<Projectile>, cooldown: &mut f32, dt: f32) {
+        // One shared cooldown prevents simultaneous directional firing.
+        *cooldown = (*cooldown - dt).max(0.0);
+
+        if *cooldown > 0.0 {
+            return;
+        }
+
+        // The first held direction wins: Up, Down, Left, then Right.
+        let shooting = [
+            (KeyCode::Up, vec2(0.0, -1.0)),
+            (KeyCode::Down, vec2(0.0, 1.0)),
+            (KeyCode::Left, vec2(-1.0, 0.0)),
+            (KeyCode::Right, vec2(1.0, 0.0)),
+        ];
+
+        if let Some((_, direction)) = shooting.iter().find(|(key, _)| is_key_down(*key)) {
+            projectiles.push(Projectile::new(
+                self.center(),
+                *direction,
+                self.projectile_speed,
+                self.damage,
+            ));
+
+            *cooldown = 1.0 / self.fire_rate.max(0.1);
+        }
     }
 }

@@ -1,4 +1,3 @@
-
 use macroquad::prelude::*;
 
 pub struct Projectile {

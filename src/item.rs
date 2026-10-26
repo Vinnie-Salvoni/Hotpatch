@@ -1,4 +1,3 @@
-
 use macroquad::prelude::*;
 
 use crate::player::Player;
@@ -102,13 +101,7 @@ impl Item {
             return;
         }
 
-        draw_rectangle(
-            self.pos.x,
-            self.pos.y,
-            self.size.x,
-            self.size.y,
-            GOLD,
-        );
+        draw_rectangle(self.pos.x, self.pos.y, self.size.x, self.size.y, GOLD);
 
         draw_rectangle_lines(
             self.pos.x,
@@ -119,12 +112,6 @@ impl Item {
             Color::new(1.0, 0.75, 0.1, 1.0),
         );
 
-        draw_text(
-            "?",
-            self.pos.x + 6.0,
-            self.pos.y + 16.0,
-            16.0,
-            BLACK,
-        );
+        draw_text("?", self.pos.x + 6.0, self.pos.y + 16.0, 16.0, BLACK);
     }
 }
